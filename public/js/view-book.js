@@ -1,8 +1,8 @@
-function viewResources() {
+function viewBook() {
     var response =
     '';
     var request = new XMLHttpRequest();
-    request.open('GET', '/view-resources', true);
+    request.open('GET', '/view-book', true);
     request.setRequestHeader('Content-Type', 'application/json');
     request.onload = function () {
     response = JSON.parse(request.responseText);
