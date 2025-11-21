@@ -4,7 +4,7 @@
   "description": "DVOPS\r https://www.figma.com/design/NcvqF5vcVFNvbMNn8nXGjN/book-guru?node-id=0-1&t=uR7p07mMASKMfOFB-1",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
