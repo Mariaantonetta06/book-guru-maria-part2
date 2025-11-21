@@ -1,7 +1,8 @@
-
 var express = require('express');
 var bodyParser = require("body-parser");
 var app = express();
+var addBookRouter = require("./utils/addUtil");
+
 
 const PORT = process.env.PORT || 5050
 var startPage = "index.html";
@@ -9,6 +10,8 @@ var startPage = "index.html";
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static("./public"));
+app.use("/api", addBookRouter);
+
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + "/public/" + startPage);
@@ -20,5 +23,13 @@ server = app.listen(PORT, function () {
 address.address}:${address.port}`;
     console.log(`Demo project at: ${baseUrl}`);
 });
+
+
+// import utils
+const { deleteBook } = require('./utils/DeleteBookUtil.js');
+
+// delete path
+app.delete('/delete-book/:id', deleteBook);
+
 
 module.exports = {app, server}
