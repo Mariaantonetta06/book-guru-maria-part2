@@ -14,7 +14,7 @@ function deleteBook(id) {
         var response = JSON.parse(request.responseText); // Parse JSON response from server
         if (request.status === 200) {
             alert(response.message); // If deletion was success, show a confirmation alert
-            viewResources(); // Refresh the table to reflect the deleted resource
+            viewBook(); // Refresh the table to reflect the deleted resource
         } else {
             // Show error message if deletion failed
             alert(response.message || "Unable to delete book.");
