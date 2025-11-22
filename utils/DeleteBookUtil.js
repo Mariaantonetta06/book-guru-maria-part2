@@ -13,7 +13,8 @@ async function deleteBook(req, res) {
 
         try {
             const data = await fs.readFile(BOOKS_FILE, 'utf8');
-            books = JSON.parse(data);
+            const parsed = JSON.parse(data);
+            books = parsed.books || []; // Adjusted to match the JSON structure
         } catch (err) {
             if (err.code === 'ENOENT') {
                 return res.status(404).json({ message: 'No books found to delete.' });
@@ -22,14 +23,14 @@ async function deleteBook(req, res) {
             }
         }
 
-        const bookIndex = books.findIndex(b => b.id == id);
+        const bookIndex = books.findIndex(b => b.bookId == id);
         if (bookIndex === -1) {
             return res.status(404).json({ message: 'Book not found.' });
         }
 
         const deletedBook = books.splice(bookIndex, 1)[0];
 
-        await fs.writeFile(BOOKS_FILE, JSON.stringify(books, null, 2), 'utf8');
+        await fs.writeFile(BOOKS_FILE, JSON.stringify({ books }, null, 2), 'utf8');
 
         return res.status(200).json({
             message: 'Book deleted successfully!',

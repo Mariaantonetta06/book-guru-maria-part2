@@ -1,11 +1,1 @@
-{
-  "books": [
-    {
-      "bookId": "B1763533397841",
-      "title": "Harry Potter",
-      "author": "J.K. Rowling",
-      "genre": "Fantasy",
-      "status": "Available"
-    }
-  ]
-}
+[]
