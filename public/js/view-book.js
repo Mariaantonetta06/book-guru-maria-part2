@@ -1,68 +1,78 @@
-let allBooks = []; // Store all books globally
+// Show/Hide Sections
+function showSection(sectionId) {
+    const sections = document.querySelectorAll('.section');
+    const buttons = document.querySelectorAll('.nav-btn');
 
-function viewBook() {
-  var request = new XMLHttpRequest();
-  request.open('GET', '/view-book', true);
-  request.setRequestHeader('Content-Type', 'application/json');
-  request.onload = function () {
-    const response = JSON.parse(request.responseText);
-    
-    // Adjust: your JSON structure is { books: [...] }, not a raw array
-    allBooks = response.books || [];
+    sections.forEach(section => section.classList.remove('active'));
+    buttons.forEach(btn => btn.classList.remove('active'));
 
-    populateGenreFilter(allBooks);
-    renderBooks(allBooks); // Initially show all
-  };
-  request.send();
+    document.getElementById(sectionId).classList.add('active');
+    event.target.classList.add('active');
+
+    if (sectionId === 'view') {
+        loadBooks();
+    }
 }
 
-function populateGenreFilter(books) {
-  const genres = new Set();
-  books.forEach(book => {
-    if (book.genre) genres.add(book.genre);
-  });
+// Load Books from API
+async function loadBooks() {
+    const container = document.getElementById('booksContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading books...</div>';
 
-  const select = document.getElementById('genreFilter');
-  // Keep "All Genres" and clear others
-  select.innerHTML = '<option value="all">All Genres</option>';
-  
-  Array.from(genres).sort().forEach(genre => {
-    const option = document.createElement('option');
-    option.value = genre;
-    option.textContent = genre;
-    select.appendChild(option);
-  });
+    try {
+        const response = await fetch('/view-book');
+        const data = await response.json();
+        displayBooks(data.books || []);
+    } catch (error) {
+        console.error('Error loading books:', error);
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>❌ Error loading books</p></div>';
+    }
 }
 
-function renderBooks(booksToShow) {
-  let html = '';
-  for (let i = 0; i < booksToShow.length; i++) {
-    html += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${booksToShow[i].title}</td>
-        <td>${booksToShow[i].author}</td>
-        <td>${booksToShow[i].genre}</td>
-        <td>${booksToShow[i].status}</td>
-        <td>
-          <button type="button" class="btn btn-danger" onclick="deleteBook('${booksToShow[i].bookId}')">
-            Delete
-          </button>
-        </td>
-      </tr>`;
-  }
-  document.getElementById('tableContent').innerHTML = html;
+// Display Books in Grid
+function displayBooks(books) {
+    const container = document.getElementById('booksContainer');
+
+    if (books.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>📭 No books found. Start by adding one!</p></div>';
+        return;
+    }
+
+    container.innerHTML = books.map(book => `
+        <div class="book-card">
+            <button class="delete-btn" onclick="deleteBookHandler('${book.bookId}', event)">✕</button>
+            <h3>${escapeHtml(book.title)}</h3>
+            <p><span class="label">Author:</span> ${escapeHtml(book.author)}</p>
+            <p><span class="label">Status:</span> ${escapeHtml(book.status)}</p>
+            <span class="genre">${escapeHtml(book.genre)}</span>
+        </div>
+    `).join('');
 }
 
-function filterByGenre() {
-  const selectedGenre = document.getElementById('genreFilter').value;
-  let filteredBooks;
+// Filter Books by Search Term
+function filterBooks() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.book-card');
 
-  if (selectedGenre === 'all') {
-    filteredBooks = allBooks;
-  } else {
-    filteredBooks = allBooks.filter(book => book.genre === selectedGenre);
-  }
+    cards.forEach(card => {
+        const title = card.querySelector('h3').textContent.toLowerCase();
+        const author = card.querySelector('p').textContent.toLowerCase();
+        const genre = card.querySelector('.genre').textContent.toLowerCase();
 
-  renderBooks(filteredBooks);
+        if (title.includes(searchTerm) || author.includes(searchTerm) || genre.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Load books when page loads
+window.addEventListener('load', loadBooks);

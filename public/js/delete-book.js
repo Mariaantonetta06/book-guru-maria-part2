@@ -1,24 +1,31 @@
+// Delete Book Handler
+async function deleteBookHandler(bookId, event) {
+    event.stopPropagation();
 
-function deleteBook(id) {
-    // Ask the user to confirm deletion before proceeding
-    if (!confirm("Are you sure you want to remove this book from your library?")) {
-        return; // Exit function if user cancels
+    // Confirmation dialog
+    if (!confirm('⚠️ Are you sure you want to delete this book? This action cannot be undone.')) {
+        return;
     }
 
-    // Configure request as DELETE to the delete-resource endpoint with the resource ID
-    var request = new XMLHttpRequest();
-    request.open("DELETE", "/delete-book/" + id, true);
-    request.setRequestHeader("Content-Type", "application/json");
-    
-    request.onload = function () {
-        var response = JSON.parse(request.responseText); // Parse JSON response from server
-        if (request.status === 200) {
-            alert(response.message); // If deletion was success, show a confirmation alert
-            viewBook(); // Refresh the table to reflect the deleted resource
+    try {
+        const response = await fetch(`/delete-book/${bookId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showAlert('✓ Book deleted successfully!', 'success');
+            
+            // Reload books after 1 second
+            setTimeout(() => {
+                loadBooks();
+            }, 1000);
         } else {
-            // Show error message if deletion failed
-            alert(response.message || "Unable to delete book.");
+            showAlert(data.message || 'Error deleting book', 'error');
         }
-    };
-    request.send();
+    } catch (error) {
+        console.error('Error deleting book:', error);
+        showAlert('Server error while deleting book', 'error');
+    }
 }
