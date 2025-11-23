@@ -119,19 +119,19 @@ gitGraph
    checkout "feature/angel-delete-book"
    commit id: "Implement Delete Book Logic"
    checkout "Testing-Branch"
-   merge "feature/angel-delete-book" id: "Merge Angel Feature"
+   merge "feature/angel-delete-book" id: "Testing Branch - delete"
 
    branch "feature/alisha-retrieve-book" order: 3
    checkout "feature/alisha-retrieve-book"
    commit id: "Implement Retrieve Book Logic"
    checkout "Testing-Branch"
-   merge "feature/alisha-retrieve-book" id: "Merge Alisha Feature"
+   merge "feature/alisha-retrieve-book" id: "Testing Branch - get"
 
    branch "feature/maria-add-book" order: 4
    checkout "feature/maria-add-book"
    commit id: "Implement Add Book Logic"
    checkout "Testing-Branch"
-   merge "feature/maria-add-book" id: "Merge Maria Feature"
+   merge "feature/maria-add-book" id: "Testing Branch - add"
 
    checkout main
    merge "Testing-Branch" id: "Final Merge for Part 1"
