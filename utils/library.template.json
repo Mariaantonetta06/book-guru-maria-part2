@@ -1,0 +1,11 @@
+{
+    "books": [
+      {
+        "bookId": "SAMPLE-001",
+        "title": "Sample Book",
+        "author": "Author Name",
+        "genre": "Fiction",
+        "status": "Available"
+      }
+    ]
+  }

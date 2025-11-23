@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Guru</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>📚 Book Guru</h1>
+    </header>
+
+    <div class="container">
+        <div class="nav-tabs">
+            <button class="nav-btn active" onclick="showSection('view')">📖 View Books</button>
+            <button class="nav-btn" onclick="showSection('add')">➕ Add Book</button>
+        </div>
+
+        <!-- View Section -->
+        <div id="view" class="section active">
+            <div class="content">
+                <div class="filter-container">
+                    <div class="filter-input">
+                        <input type="text" id="searchInput" placeholder="Search by title, author, or genre..." onkeyup="filterBooks()">
+                    </div>
+                    <button class="btn btn-primary" onclick="loadBooks()">🔄 Refresh</button>
+                </div>
+
+                <div id="booksContainer" class="books-grid">
+                    <div class="loading">
+                        <div class="spinner"></div> Loading books...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Section -->
+        <div id="add" class="section">
+            <div class="content">
+                <h2 style="margin-bottom: 30px; color: #1e3c72;">Add New Book</h2>
+
+                <div id="alertContainer"></div>
+
+                <form id="addBookForm" onsubmit="submitForm(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="title">Book Title *</label>
+                            <input type="text" id="title" name="title" required placeholder="Enter book title">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="author">Author *</label>
+                            <input type="text" id="author" name="author" required placeholder="Enter author name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="genre">Genre *</label>
+                            <input type="text" id="genre" name="genre" required placeholder="Enter genre (e.g., Fiction, Mystery)">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Add Book</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/alisha-view-book.js"></script>
+    <script src="js/maria-add-book.js"></script>
+    <script src="js/angel-delete-book.js"></script>
+</body>
+</html>
