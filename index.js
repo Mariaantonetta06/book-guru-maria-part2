@@ -1,7 +1,7 @@
 var express = require('express');
 var bodyParser = require("body-parser");
 var app = express();
-var addBookRouter = require("./utils/AddBookUtil.js");
+var addBookRouter = require("./utils/MariaAddBookUtil.js");
 
 
 const PORT = process.env.PORT || 5050
@@ -13,7 +13,7 @@ app.use(express.static("./public"));
 app.use("/api", addBookRouter);
 
 
-const { viewBook } = require('./utils/ViewBookUtil')
+const { viewBook } = require('./utils/AlishaViewBookUtil.js')
 app.get('/view-book', viewBook)
 
 app.get('/', (req, res) => {
@@ -29,7 +29,7 @@ address.address}:${address.port}`;
 
 
 // import utils
-const { deleteBook } = require('./utils/DeleteBookUtil.js');
+const { deleteBook } = require('./utils/AngelDeleteBookUtil.js');
 
 // delete path
 app.delete('/delete-book/:id', deleteBook);
