@@ -101,9 +101,9 @@ Pull Request Workflow
 	1.	Create feature/* branch
 	2.	Commit with meaningful messages
 	3.	Push to GitHub
-	4.	Open Pull Request → merge into dev
+	4.	Open Pull Request → merge into dev (testing branch)
 	5.	DevOps Lead (Angel) reviews + resolves conflicts
-	6.	After Sprint 4 testing → merge dev → main
+	6.	After Sprint 4 testing → merge dev ( testing branch) → main
 
 ⸻
 
