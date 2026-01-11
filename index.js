@@ -1,37 +1,47 @@
 var express = require("express");
 var bodyParser = require("body-parser");
+
 var app = express();
-var addBookRouter = require("./utils/MariaAddBookUtil.js");
 
 const PORT = process.env.PORT || 5050;
 var startPage = "index.html";
 
+// middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static("./public"));
+
+// routers
+var addBookRouter = require("./utils/MariaAddBookUtil.js");
 app.use("/api", addBookRouter);
 
+// view
 const { viewBook } = require("./utils/AlishaViewBookUtil.js");
 app.get("/view-book", viewBook);
 
+// delete
+const { deleteBook } = require("./utils/AngelDeleteBookUtil.js");
+app.delete("/delete-book/:id", deleteBook);
+
+// home
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/" + startPage);
 });
 
-// import utils
-const { deleteBook } = require("./utils/AngelDeleteBookUtil.js");
-
-// delete path
-app.delete("/delete-book/:id", deleteBook);
-
-// ✅ Only start server when running this file directly (NOT during Jest tests)
+// ✅ Only start server when running `node index.js` directly (NOT during tests)
 let server;
-if (require.main === module) {
-  server = app.listen(PORT, function () {
+function startServer(port = PORT) {
+  server = app.listen(port, function () {
     const address = server.address();
-    const baseUrl = `http://${address.address == "::" ? "localhost" : address.address}:${address.port}`;
+    const host = address.address == "::" ? "localhost" : address.address;
+    const baseUrl = `http://${host}:${address.port}`;
     console.log(`Demo project at: ${baseUrl}`);
   });
+  return server;
 }
 
-module.exports = { app, server };
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };

@@ -4,39 +4,41 @@ const path = require("path");
 
 const router = express.Router();
 
-// Use same path style as DeleteBookUtil & ViewBookUtil
-const BOOKS_FILE = path.join("utils", "library.json");
+// ✅ Allow tests to override DB location (so you don't damage real utils/library.json)
+const BOOKS_FILE = process.env.LIBRARY_PATH
+  ? path.resolve(process.env.LIBRARY_PATH)
+  : path.join(__dirname, "library.json");
 
-// Read database: always return { books: [] }
+// Read DB: always return { books: [] }
 async function readDB() {
   try {
     const data = await fs.readFile(BOOKS_FILE, "utf8");
     const parsed = JSON.parse(data);
     return { books: parsed.books || [] };
   } catch (err) {
-    // If file doesn't exist yet, start with empty books array
     if (err.code === "ENOENT") {
       return { books: [] };
     }
-    throw err;
+    throw err; // includes JSON parse errors
   }
 }
 
-// Write database: always store { books: [...] }
+// Write DB: always store { books: [...] }
 async function writeDB(books) {
   const payload = { books };
   await fs.writeFile(BOOKS_FILE, JSON.stringify(payload, null, 2), "utf8");
 }
 
-// POST /api/add-book → Add a new book
-router.post("/add-book", async (req, res) => {
+// ✅ Exportable handler (for unit tests)
+async function addBookHandler(req, res) {
   const { title, author, genre } = req.body;
 
   // basic validation
   if (!title || !author || !genre) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Title, author and genre are required." });
+    return res.status(400).json({
+      success: false,
+      message: "Title, author and genre are required.",
+    });
   }
 
   try {
@@ -44,7 +46,7 @@ router.post("/add-book", async (req, res) => {
     const books = db.books;
 
     const newBook = {
-      bookId: "B" + Date.now(), // simple unique id
+      bookId: "B" + Date.now(),
       title,
       author,
       genre,
@@ -61,10 +63,17 @@ router.post("/add-book", async (req, res) => {
     });
   } catch (err) {
     console.error("Error adding book:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error while adding book." });
+    return res.status(500).json({
+      success: false,
+      message: "Server error while adding book.",
+    });
   }
-});
+}
+
+// Route
+router.post("/add-book", addBookHandler);
+
+// attach for tests (so require() still returns router)
+router.addBookHandler = addBookHandler;
 
 module.exports = router;
