@@ -12,38 +12,38 @@ pipeline {
   stages {
     stage("Check tools") {
       steps {
-        bat "docker version"
-        bat "kubectl version --client"
-        bat "minikube version"
+        sh "docker version"
+        sh "kubectl version --client"
+        sh "minikube version"
       }
     }
 
     stage("Point Docker to Minikube") {
       steps {
         // Important: build image INTO minikube's docker so Kubernetes can pull it
-        bat 'for /f "delims=" %%i in (\'minikube docker-env --shell cmd\') do %%i'
+        sh 'eval $(minikube docker-env --shell bash)'
       }
     }
 
     stage("Build Docker image") {
       steps {
-        bat "docker build -t %IMAGE% ."
-        bat "docker images | findstr %APP_NAME%"
+        sh "docker build -t ${IMAGE} ."
+        sh "docker images | grep ${APP_NAME}"
       }
     }
 
     stage("Deploy to Kubernetes") {
       steps {
-        bat "kubectl apply -f %DEPLOY_YAML%"
-        bat "kubectl apply -f %SVC_YAML%"
+        sh "kubectl apply -f ${DEPLOY_YAML}"
+        sh "kubectl apply -f ${SVC_YAML}"
       }
     }
 
     stage("Verify rollout") {
       steps {
-        bat "kubectl rollout status deployment/%APP_NAME% --timeout=120s"
-        bat "kubectl get pods -o wide"
-        bat "kubectl get svc"
+        sh "kubectl rollout status deployment/%APP_NAME% --timeout=120s"
+        sh "kubectl get pods -o wide"
+        sh "kubectl get svc"
       }
     }
   }
