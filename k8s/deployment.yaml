@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-guru
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-guru
+  template:
+    metadata:
+      labels:
+        app: book-guru
+    spec:
+      containers:
+        - name: book-guru
+          image: book-guru:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5050
+          env:
+            - name: PORT
+              value: "5050"
