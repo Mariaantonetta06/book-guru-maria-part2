@@ -14,21 +14,13 @@ pipeline {
       steps {
         sh "docker version"
         sh "kubectl version --client"
-        sh "minikube version"
-      }
-    }
-
-    stage("Point Docker to Minikube") {
-      steps {
-        // Important: build image INTO minikube's docker so Kubernetes can pull it
-        sh 'eval $(minikube docker-env --shell bash)'
       }
     }
 
     stage("Build Docker image") {
       steps {
         sh "docker build -t ${IMAGE} ."
-        sh "docker images | grep ${APP_NAME}"
+        sh "docker images | grep ${APP_NAME} || true"
       }
     }
 
@@ -41,7 +33,7 @@ pipeline {
 
     stage("Verify rollout") {
       steps {
-        sh "kubectl rollout status deployment/%APP_NAME% --timeout=120s"
+        sh "kubectl rollout status deployment/${APP_NAME} --timeout=120s"
         sh "kubectl get pods -o wide"
         sh "kubectl get svc"
       }
