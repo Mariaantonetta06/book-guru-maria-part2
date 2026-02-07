@@ -7,6 +7,7 @@ pipeline {
     IMAGE = "${APP_NAME}:${IMAGE_TAG}"
     DEPLOY_YAML = "k8s/deployment.yaml"
     SVC_YAML = "k8s/service.yaml"
+    KUBECONFIG = "/var/jenkins_home/.kube/config"
   }
 
   stages {
@@ -14,13 +15,15 @@ pipeline {
       steps {
         sh "docker version"
         sh "kubectl version --client"
+        sh "kubectl config use-context docker-desktop || true"
+        sh "kubectl cluster-info"
       }
     }
 
     stage("Build Docker image") {
       steps {
         sh "docker build -t ${IMAGE} ."
-        sh "docker images | grep ${APP_NAME} || true"
+        sh "docker images | grep ${APP_NAME}"
       }
     }
 
