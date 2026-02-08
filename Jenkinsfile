@@ -80,7 +80,7 @@ pipeline {
               set -e
               if ! minikube status | grep -q "Running"; then
                 echo "Starting Minikube..."
-                minikube start --driver=docker || minikube start
+                minikube start --driver=docker --force
               fi
               sleep 10
               eval $(minikube docker-env)
@@ -92,7 +92,7 @@ pipeline {
               minikube status >nul 2>&1
               if errorlevel 1 (
                 echo Starting Minikube...
-                minikube start
+                minikube start --force
               )
               timeout /t 10
               kubectl config use-context minikube
@@ -193,9 +193,9 @@ pipeline {
       echo "Build completed!"
       script {
         if (isUnix()) {
-          sh 'kubectl get all'
+          sh 'kubectl get all || true'
         } else {
-          bat 'kubectl get all'
+          bat 'kubectl get all || exit /b 0'
         }
       }
     }
