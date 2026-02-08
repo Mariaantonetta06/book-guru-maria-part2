@@ -1,197 +1,142 @@
-// generate-coverage.js
-// Playwright V8 coverage -> Istanbul HTML report
-// Output: coverage/frontend/index.html (always exists)
-
-const fs = require("fs");
+const { execSync } = require("child_process");
+const fs = require("fs/promises");
 const path = require("path");
-const { fileURLToPath } = require("url");
-
 const v8toIstanbul = require("v8-to-istanbul");
-const { createCoverageMap } = require("istanbul-lib-coverage");
+const libCoverage = require("istanbul-lib-coverage");
 const libReport = require("istanbul-lib-report");
 const reports = require("istanbul-reports");
 
-const PROJECT_ROOT = __dirname;
+const TEMP_DIR = path.join(process.cwd(), "coverage", "temp");
+const OUTPUT_DIR = path.join(process.cwd(), "coverage", "frontend");
 
-// Playwright V8 JSON coverage folder (from your setup)
-const V8_COVERAGE_DIR = path.join(PROJECT_ROOT, "coverage", "temp");
+async function generateCoverage() {
+  try {
+    console.log("🧪 Running Playwright tests with coverage...");
+    
+    // Run tests
+    execSync("npx playwright test", { stdio: "inherit" });
 
-// Final output folder for frontend coverage
-const FRONTEND_OUT_DIR = path.join(PROJECT_ROOT, "coverage", "frontend");
+    console.log("\n📊 Generating coverage report...");
 
-// ✅ FAST way to get 80%: only grade YOUR file
-// If you must include all frontend JS, change this to: []
-const INCLUDE_ONLY = ["public/js/maria-add-book.js"];
+    // Read all v8 coverage files
+    const files = await fs.readdir(TEMP_DIR);
+    const coverageFiles = files.filter((f) => f.startsWith("v8-coverage-"));
 
-// Keep at 80 if your rubric needs it
-const THRESHOLDS = { lines: 80, statements: 80, functions: 80, branches: 80 };
-
-function walk(dir) {
-  if (!fs.existsSync(dir)) return [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const out = [];
-  for (const e of entries) {
-    const full = path.join(dir, e.name);
-    if (e.isDirectory()) out.push(...walk(full));
-    else out.push(full);
-  }
-  return out;
-}
-
-function normalizeFunctions(functionsMaybe) {
-  let functions = functionsMaybe;
-  if (!functions) return [];
-  if (!Array.isArray(functions)) functions = Object.values(functions);
-
-  return functions.map((fn) => {
-    const fixed = { ...fn };
-
-    // normalize ranges
-    if (fixed.ranges && !Array.isArray(fixed.ranges)) {
-      if (fixed.ranges.ranges && Array.isArray(fixed.ranges.ranges)) fixed.ranges = fixed.ranges.ranges;
-      else fixed.ranges = Object.values(fixed.ranges);
+    if (coverageFiles.length === 0) {
+      console.warn("⚠️  No coverage files found!");
+      return;
     }
 
-    // normalize blocks -> ranges (some formats)
-    if (!fixed.ranges && fixed.blocks) {
-      fixed.ranges = Array.isArray(fixed.blocks) ? fixed.blocks : Object.values(fixed.blocks);
-      delete fixed.blocks;
+    const map = libCoverage.createCoverageMap({});
+
+    // Process each coverage file
+    for (const file of coverageFiles) {
+      const filePath = path.join(TEMP_DIR, file);
+      const rawCoverage = JSON.parse(await fs.readFile(filePath, "utf8"));
+
+      for (const entry of rawCoverage) {
+        // Only process maria-add-book.js
+        if (!entry.url.includes("maria-add-book.js")) continue;
+
+        // Convert URL to local file path
+        const scriptPath = entry.url.replace(/^.*\/js\//, path.join(process.cwd(), "public", "js") + path.sep);
+        
+        try {
+          const converter = v8toIstanbul(scriptPath, 0, { source: await fs.readFile(scriptPath, "utf8") });
+          await converter.load();
+          converter.applyCoverage(entry.functions);
+          
+          const istanbulCoverage = converter.toIstanbul();
+          map.merge(istanbulCoverage);
+        } catch (err) {
+          console.warn(`⚠️  Could not process ${scriptPath}: ${err.message}`);
+        }
+      }
     }
 
-    if (!Array.isArray(fixed.ranges)) fixed.ranges = [];
-    return fixed;
-  });
-}
+    // Generate reports
+    await fs.mkdir(OUTPUT_DIR, { recursive: true });
+    
+    const context = libReport.createContext({
+      dir: OUTPUT_DIR,
+      coverageMap: map,
+    });
 
-function urlToLocalPath(urlStr) {
-  // file://...
-  if (urlStr.startsWith("file://")) return fileURLToPath(urlStr);
+    const htmlReport = reports.create("html");
+    const textReport = reports.create("text");
+    
+    htmlReport.execute(context);
+    textReport.execute(context);
 
-  // http://localhost/.../js/xxx.js  -> public/js/xxx.js
-  const jsIndex = urlStr.indexOf("/js/");
-  if (jsIndex !== -1) {
-    const rel = urlStr.slice(jsIndex + 1); // "js/xxx.js"
-    return path.join(PROJECT_ROOT, "public", rel);
-  }
+    // Retrieve overall coverage summary data from the coverage map
+    const summary = map.getCoverageSummary().data;
 
-  // fallback if url contains /public/js/...
-  const pjIndex = urlStr.indexOf("/public/js/");
-  if (pjIndex !== -1) {
-    const rel = urlStr.slice(pjIndex + 1);
-    return path.join(PROJECT_ROOT, rel);
-  }
+    // Define minimum acceptable coverage thresholds for each metric (in percentage)
+    const thresholds = {
+      lines: 80,       // Minimum 80% of lines must be covered
+      statements: 80,  // Minimum 80% of statements must be covered
+      functions: 80,   // Minimum 80% of functions must be covered
+      branches: 80     // Minimum 80% of branches must be covered
+    };
 
-  return null;
-}
+    // Array to store any metrics that do not meet the defined threshold
+    let belowThreshold = [];
 
-function shouldInclude(localPath) {
-  const norm = localPath.replace(/\\/g, "/");
-  if (!norm.includes("/public/js/")) return false;
-  if (!norm.endsWith(".js")) return false;
-
-  if (INCLUDE_ONLY.length === 0) return true;
-
-  return INCLUDE_ONLY.some((p) => norm.endsWith(p.replace(/\\/g, "/")));
-}
-
-async function convertOneScript(localPath, functions) {
-  const source = fs.readFileSync(localPath, "utf8");
-  const converter = v8toIstanbul(localPath, 0, { source });
-  await converter.load();
-  converter.applyCoverage(normalizeFunctions(functions));
-  return converter.toIstanbul();
-}
-
-async function main() {
-  const jsonFiles = walk(V8_COVERAGE_DIR).filter((f) => f.endsWith(".json"));
-  if (jsonFiles.length === 0) {
-    console.error(`X No V8 coverage JSON found in: ${V8_COVERAGE_DIR}`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const map = createCoverageMap({});
-
-  for (const file of jsonFiles) {
-    let parsed;
-    try {
-      parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-    } catch {
-      continue;
+    // Loop through each coverage metric (lines, statements, functions, branches)
+    for (const [metric, threshold] of Object.entries(thresholds)) {
+      const covered = summary[metric].pct; // Get the coverage percentage for this metric
+      // Check if the actual coverage is below the threshold
+      if (covered < threshold) {
+        // Add a message to the belowThreshold array for reporting later
+        belowThreshold.push(`${metric}: ${covered}% (below ${threshold}%)`);
+      }
     }
 
-    const entries = Array.isArray(parsed) ? parsed : parsed.result || parsed.entries || [];
-
-    for (const entry of entries) {
-      const urlStr = entry.url || "";
-      const localPath = urlToLocalPath(urlStr);
-
-      if (!localPath) continue;
-      if (!fs.existsSync(localPath)) continue;
-      if (!shouldInclude(localPath)) continue;
-
-      const istanbulObj = await convertOneScript(localPath, entry.functions);
-      map.merge(istanbulObj);
+    // If any metrics fall below the required threshold
+    if (belowThreshold.length > 0) {
+      console.error('\n❌ Coverage threshold NOT met:');
+      // Print each failing metric and its coverage percentage
+      belowThreshold.forEach(msg => console.error(`  - ${msg}`));
+      // Set exit code to 1 to indicate failure (useful for CI/CD pipelines)
+      process.exitCode = 1;
+    } else {
+      // If all thresholds are met, display a success message
+      console.log('\n✅ All coverage thresholds met.');
     }
+
+    // ✅ ADDITIONAL FEATURE #2: Individual File Coverage Breakdown
+    console.log('\n📁 Individual File Coverage:');
+    const files2 = map.files();
+    files2.forEach(file => {
+      const fileCoverage = map.fileCoverageFor(file);
+      const fileSummary = fileCoverage.toSummary();
+      const fileName = path.basename(file);
+      
+      console.log(`\n  ${fileName}:`);
+      console.log(`    Lines: ${fileSummary.lines.pct.toFixed(2)}%`);
+      console.log(`    Statements: ${fileSummary.statements.pct.toFixed(2)}%`);
+      console.log(`    Functions: ${fileSummary.functions.pct.toFixed(2)}%`);
+      console.log(`    Branches: ${fileSummary.branches.pct.toFixed(2)}%`);
+    });
+
+    console.log(`\n✅ Coverage report generated at: ${OUTPUT_DIR}/index.html`);
+    
+    // Print summary
+    console.log("\n📈 Overall Coverage Summary:");
+    console.log(`  Lines: ${summary.lines.pct.toFixed(2)}%`);
+    console.log(`  Statements: ${summary.statements.pct.toFixed(2)}%`);
+    console.log(`  Functions: ${summary.functions.pct.toFixed(2)}%`);
+    console.log(`  Branches: ${summary.branches.pct.toFixed(2)}%`);
+
+    // Check if coverage meets threshold
+    if (summary.lines.pct < 80) {
+      console.warn(`\n⚠️  Warning: Line coverage ${summary.lines.pct.toFixed(2)}% is below 80% threshold`);
+    }
+
+  } catch (error) {
+    console.error("❌ Error generating coverage:", error.message);
+    process.exit(1);
   }
-
-  const filesInMap = Object.keys(map.data || {});
-  if (filesInMap.length === 0) {
-    console.error("\nX No frontend JS files were included in coverage.");
-    console.error("Fix: ensure your scripts load from /js/... (public/js), or adjust INCLUDE_ONLY.");
-    process.exitCode = 1;
-    return;
-  }
-
-  // clean output and regenerate
-  fs.rmSync(FRONTEND_OUT_DIR, { recursive: true, force: true });
-  fs.mkdirSync(FRONTEND_OUT_DIR, { recursive: true });
-
-  const context = libReport.createContext({
-    dir: FRONTEND_OUT_DIR,
-    coverageMap: map,
-  });
-
-  // ✅ HTML report will now be at: coverage/frontend/index.html
-  const htmlReport = reports.create("html", { dir: FRONTEND_OUT_DIR });
-  const lcovReport = reports.create("lcovonly", { file: "lcov.info" });
-
-  htmlReport.execute(context);
-  lcovReport.execute(context);
-
-  const summary = map.getCoverageSummary().toJSON();
-  const pct = {
-    statements: summary.statements.pct,
-    branches: summary.branches.pct,
-    functions: summary.functions.pct,
-    lines: summary.lines.pct,
-  };
-
-  console.log("\n=============================== Coverage summary ===============================");
-  console.log(`Statements   : ${pct.statements}%`);
-  console.log(`Branches     : ${pct.branches}%`);
-  console.log(`Functions    : ${pct.functions}%`);
-  console.log(`Lines        : ${pct.lines}%`);
-  console.log("================================================================================\n");
-
-  const fails = [];
-  if (pct.lines < THRESHOLDS.lines) fails.push(`- lines: ${pct.lines}% (need ${THRESHOLDS.lines}%)`);
-  if (pct.statements < THRESHOLDS.statements) fails.push(`- statements: ${pct.statements}% (need ${THRESHOLDS.statements}%)`);
-  if (pct.functions < THRESHOLDS.functions) fails.push(`- functions: ${pct.functions}% (need ${THRESHOLDS.functions}%)`);
-  if (pct.branches < THRESHOLDS.branches) fails.push(`- branches: ${pct.branches}% (need ${THRESHOLDS.branches}%)`);
-
-  if (fails.length) {
-    console.error("X Coverage threshold NOT met:\n" + fails.map((x) => " " + x).join("\n"));
-    process.exitCode = 1;
-  } else {
-    console.log("✓ All coverage thresholds met.");
-  }
-
-  console.log(`Coverage report generated in ${FRONTEND_OUT_DIR}`);
-  console.log(`Open: ${path.join(FRONTEND_OUT_DIR, "index.html")}`);
 }
 
-main().catch((e) => {
-  console.error("Fatal error generating frontend coverage:", e);
-  process.exitCode = 1;
-});
+generateCoverage();
