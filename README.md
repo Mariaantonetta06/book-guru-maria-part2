@@ -1,6 +1,6 @@
 # 📚 Book Guru – Book Management System
 
-[![Build Status](http://localhost:8080/buildStatus/icon?job=book-guru-pipeline)](http://localhost:8080/job/book-guru-pipeline/)
+[![Build Status](http://localhost:8081/buildStatus/icon?job=book-guru-pipeline)](http://localhost:8081/job/book-guru-pipeline/)
 
 > **Note:** This README covers Part 1, Part 2, and Part 3 of the DevOps project.
 
