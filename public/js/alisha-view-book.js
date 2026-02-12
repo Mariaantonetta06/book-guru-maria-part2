@@ -46,7 +46,7 @@ function displayBooks(books) {
     const container = document.getElementById('booksContainer');
 
     if (!books || books.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>📭 No books found. Start by adding one!</p></div>';
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>🔭 No books found. Start by creating one!</p></div>';
         return;
     }
 

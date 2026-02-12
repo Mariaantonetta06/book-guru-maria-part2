@@ -15,7 +15,7 @@
     <div class="container">
         <div class="nav-tabs">
             <button class="nav-btn active" onclick="showSection('view')">📖 View Books</button>
-            <button class="nav-btn" onclick="showSection('add')">➕ Add Book</button>
+            <button class="nav-btn" onclick="showSection('create')">➕ Create Book</button>
         </div>
 
         <!-- View Section -->
@@ -36,14 +36,14 @@
             </div>
         </div>
 
-        <!-- Add Section -->
-        <div id="add" class="section">
+        <!-- Create Section -->
+        <div id="create" class="section">
             <div class="content">
                 <h2 style="margin-bottom: 30px; color: #1a1a2e;">📝 Create New Book</h2>
 
                 <div id="alertContainer"></div>
 
-                <form id="addBookForm" onsubmit="submitForm(event)">
+                <form id="createBookForm" onsubmit="submitForm(event)">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="title">Book Title *</label>
@@ -109,7 +109,7 @@
     </div>
 
     <script src="js/alisha-view-book.js"></script>
-    <script src="js/maria-add-book.js"></script>
+    <script src="js/maria-create-book.js"></script>
     <script src="js/angel-delete-book.js"></script>
 </body>
 </html>

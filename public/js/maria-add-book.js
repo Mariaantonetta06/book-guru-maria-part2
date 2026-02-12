@@ -1,4 +1,4 @@
-// Submit Add Book Form
+// Submit Create Book Form
 async function submitForm(event) {
     event.preventDefault();
 
@@ -13,10 +13,10 @@ async function submitForm(event) {
     }
 
     // Disable submit button
-    const submitBtn = document.querySelector('#addBookForm button[type="submit"]');
+    const submitBtn = document.querySelector('#createBookForm button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Adding...';
+    submitBtn.textContent = 'Creating...';
 
     try {
         const response = await fetch('/api/add-book', {
@@ -34,14 +34,14 @@ async function submitForm(event) {
         const data = await response.json();
 
         if (response.ok) {
-            showAlert('✓ Book added successfully!', 'success');
+            showAlert('✅ Book created successfully!', 'success');
             
             // Reset form
-            document.getElementById('addBookForm').reset();
+            document.getElementById('createBookForm').reset();
 
             // Switch to view section after 1.5 seconds
             setTimeout(() => {
-                document.getElementById('add').classList.remove('active');
+                document.getElementById('create').classList.remove('active');
                 document.getElementById('view').classList.add('active');
                 
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
@@ -50,11 +50,11 @@ async function submitForm(event) {
                 loadBooks();
             }, 1500);
         } else {
-            showAlert(data.message || 'Error adding book', 'error');
+            showAlert(data.message || 'Error creating book', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showAlert('Server error while adding book', 'error');
+        showAlert('Server error while creating book', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
